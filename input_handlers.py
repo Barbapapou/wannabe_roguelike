@@ -39,15 +39,6 @@ MOVE_KEYS = {
     tcod.event.K_KP_7: (-1, -1),
     tcod.event.K_KP_8: (0, -1),
     tcod.event.K_KP_9: (1, -1),
-    # Vi keys.
-    tcod.event.K_h: (-1, 0),
-    tcod.event.K_j: (0, 1),
-    tcod.event.K_k: (0, -1),
-    tcod.event.K_l: (1, 0),
-    tcod.event.K_y: (-1, -1),
-    tcod.event.K_u: (1, -1),
-    tcod.event.K_b: (-1, 1),
-    tcod.event.K_n: (1, 1),
 }
 
 WAIT_KEYS = {
@@ -386,8 +377,27 @@ class InventoryEventHandler(AskUserEventHandler):
 
     What happens then depends on the subclass.
     """
+    def __init__(self, engine):
+        super().__init__(engine)
+        self.index_selected: int = 0
+        self.unique_item = self.engine.player.inventory.unique_item()
 
-    TITLE = "<missing title>"
+    def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
+        """Handle events for input handlers with an engine."""
+        action_or_state = self.dispatch(event)
+        if isinstance(action_or_state, BaseEventHandler):
+            return action_or_state
+        if self.handle_action(action_or_state):
+            # A valid action was performed.
+            if not self.engine.player.is_alive:
+                # The player was killed sometime during or after the action.
+                return GameOverEventHandler(self.engine)
+            elif self.engine.player.level.requires_level_up:
+                return LevelUpEventHandler(self.engine)
+            return self  # Return to the main handler.
+        return self
+
+    TITLE = "INVENTORY"
 
     def on_render(self, console: tcod.Console) -> None:
         """Render an inventory menu, which displays the items in the inventory, and the letter to select them.
@@ -395,9 +405,11 @@ class InventoryEventHandler(AskUserEventHandler):
         they are.
         """
         super().on_render(console)
-        number_of_items_in_inventory = len(self.engine.player.inventory.items)
 
-        height = number_of_items_in_inventory + 2
+        self.unique_item = self.engine.player.inventory.unique_item()
+
+        number_of_unique_items_in_inventory = len(self.unique_item)
+        height = number_of_unique_items_in_inventory + 2
 
         if height <= 3:
             height = 3
@@ -409,12 +421,16 @@ class InventoryEventHandler(AskUserEventHandler):
 
         y = 0
 
-        width = len(self.TITLE) + 4
+        width = 0
+
+        for i in self.unique_item:
+            if len(i.name) > width:
+                width = len(i.name)
 
         console.draw_frame(
             x=x,
             y=y,
-            width=width,
+            width=int(width * 1.8),
             height=height,
             title=self.TITLE,
             clear=True,
@@ -422,46 +438,61 @@ class InventoryEventHandler(AskUserEventHandler):
             bg=(0, 0, 0),
         )
 
-        if number_of_items_in_inventory > 0:
-            for i, item in enumerate(self.engine.player.inventory.items):
-                item_key = chr(ord("a") + i)
+        if number_of_unique_items_in_inventory > 0:
+            for i, item in enumerate(self.unique_item):
 
                 is_equipped = self.engine.player.equipment.item_is_equipped(item)
+                occurrence_number = self.engine.player.inventory.item_occurrence(item)
 
-                item_string = f"({item_key}) {item.name}"
-
+                item_string = f"{item.name}"
+                # TODO change the color of the item if it's selected at the moment + show the number of the same
+                #  item in the inventory
                 if is_equipped:
                     item_string = f"{item_string} (E)"
+                if occurrence_number > 1:
+                    item_string = f"{item_string} (x{occurrence_number})"
 
-                console.print(x + 1, y + i + 1, item_string)
+                fg = color.white
+                bg = color.black
+                if self.index_selected == i:
+                    fg = color.black
+                    bg = color.white
+
+                console.print(x + 1, y + i + 1, item_string, fg=fg, bg=bg)
         else:
             console.print(x + 1, y + 1, "(Empty)")
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
-        player = self.engine.player
         key = event.sym
-        index = key - tcod.event.K_a
 
-        if 0 <= index <= 26:
+        if key in MOVE_KEYS:
+            dx, dy = MOVE_KEYS[key]
+            self.index_selected += dy
+            if self.index_selected < 0:
+                self.index_selected = 0
+            elif self.index_selected >= len(self.unique_item):
+                self.index_selected = len(self.unique_item) - 1
+            return None
+
+        if key == tcod.event.K_u:
             try:
-                selected_item = player.inventory.items[index]
+                selected_item = self.unique_item[self.index_selected]
             except IndexError:
                 self.engine.message_log.add_message("Invalid entry.", color.invalid)
                 return None
-            return self.on_item_selected(selected_item)
+            return self.use_item_selected(selected_item)
+
+        if key == tcod.event.K_d:
+            try:
+                selected_item = self.unique_item[self.index_selected]
+            except IndexError:
+                self.engine.message_log.add_message("Invalid entry.", color.invalid)
+                return None
+            return self.drop_item_selected(selected_item)
+
         return super().ev_keydown(event)
 
-    def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
-        """Called when the user selects a valid item."""
-        raise NotImplementedError()
-
-
-class InventoryActivateHandler(InventoryEventHandler):
-    """Handle using an inventory item."""
-
-    TITLE = "Select an item to use"
-
-    def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
+    def use_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         if item.consumable:
             # Return the action for the selected item.
             return item.consumable.get_action(self.engine.player)
@@ -470,13 +501,7 @@ class InventoryActivateHandler(InventoryEventHandler):
         else:
             return None
 
-
-class InventoryDropHandler(InventoryEventHandler):
-    """Handle dropping an inventory item."""
-
-    TITLE = "Select an item to drop"
-
-    def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
+    def drop_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Drop this item."""
         return actions.DropItem(self.engine.player, item)
 
@@ -627,10 +652,7 @@ class MainGameEventHandler(EventHandler):
             return CharacterScreenEventHandler(self.engine)
 
         elif key == tcod.event.K_i:
-            return InventoryActivateHandler(self.engine)
-
-        elif key == tcod.event.K_d:
-            return InventoryDropHandler(self.engine)
+            return InventoryEventHandler(self.engine)
 
         elif key == tcod.event.K_w:
             return LookHandler(self.engine)
