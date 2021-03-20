@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from typing import Callable, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Callable, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import tcod.event
 
@@ -380,7 +380,9 @@ class InventoryEventHandler(AskUserEventHandler):
     def __init__(self, engine):
         super().__init__(engine)
         self.index_selected: int = 0
-        self.unique_item = self.engine.player.inventory.unique_item()
+        self.unique_item: List[Item] = self.engine.player.inventory.unique_item()
+        self.search_string: str = ""
+        self.typing = False
 
     def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
         """Handle events for input handlers with an engine."""
@@ -408,8 +410,11 @@ class InventoryEventHandler(AskUserEventHandler):
 
         self.unique_item = self.engine.player.inventory.unique_item()
 
+        if self.search_string != "":
+            self.strip_by_search_item()
+
         number_of_unique_items_in_inventory = len(self.unique_item)
-        height = number_of_unique_items_in_inventory + 5
+        height = number_of_unique_items_in_inventory + 6
 
         if self.engine.player.x <= 30:
             x = 40
@@ -437,7 +442,7 @@ class InventoryEventHandler(AskUserEventHandler):
             bg=(0, 0, 0),
         )
 
-        if number_of_unique_items_in_inventory > 0:
+        if len(self.unique_item) > 0:
             for i, item in enumerate(self.unique_item):
 
                 is_equipped = self.engine.player.equipment.item_is_equipped(item)
@@ -459,40 +464,63 @@ class InventoryEventHandler(AskUserEventHandler):
         else:
             console.print(x + 1, y + 1, "(Empty)")
 
-        console.print(x + 2, y + len(self.unique_item) + 2, "u", fg=color.shortcut_hint)
-        console.print(x + 3, y + len(self.unique_item) + 2, ": Use,")
-        console.print(x + 10, y + len(self.unique_item) + 2, "d", fg=color.shortcut_hint)
-        console.print(x + 11, y + len(self.unique_item) + 2, ": Drop")
-        console.print(x + 2, y + len(self.unique_item) + 3, "f", fg=color.shortcut_hint)
-        console.print(x + 3, y + len(self.unique_item) + 3, ": Search")
+        showed_string = f": {self.search_string}"
+        if self.typing:
+            showed_string = f"{showed_string}|"
+
+        console.print(x + 2, y + len(self.unique_item) + 2, showed_string)
+
+        console.print(x + 2, y + len(self.unique_item) + 3, "u", fg=color.shortcut_hint)
+        console.print(x + 3, y + len(self.unique_item) + 3, ": Use,")
+        console.print(x + 10, y + len(self.unique_item) + 3, "d", fg=color.shortcut_hint)
+        console.print(x + 11, y + len(self.unique_item) + 3, ": Drop")
+        console.print(x + 2, y + len(self.unique_item) + 4, "f", fg=color.shortcut_hint)
+        console.print(x + 3, y + len(self.unique_item) + 4, ": Search")
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         key = event.sym
 
-        if key in MOVE_KEYS:
-            dx, dy = MOVE_KEYS[key]
-            self.index_selected += dy
-            if self.index_selected < 0:
-                self.index_selected = 0
-            elif self.index_selected >= len(self.unique_item):
-                self.index_selected = len(self.unique_item) - 1
-            return None
-
-        if key == tcod.event.K_u:
-            try:
-                selected_item = self.unique_item[self.index_selected]
-            except IndexError:
-                self.engine.message_log.add_message("Invalid entry.", color.invalid)
+        if not self.typing:
+            if key in MOVE_KEYS:
+                dy = CURSOR_Y_KEYS[key]
+                self.index_selected += dy
+                if self.index_selected < 0:
+                    self.index_selected = 0
+                elif self.index_selected >= len(self.unique_item):
+                    self.index_selected = len(self.unique_item) - 1
                 return None
-            return self.use_item_selected(selected_item)
 
-        if key == tcod.event.K_d:
-            try:
-                selected_item = self.unique_item[self.index_selected]
-            except IndexError:
-                self.engine.message_log.add_message("Invalid entry.", color.invalid)
+            if key == tcod.event.K_u:
+                try:
+                    selected_item = self.unique_item[self.index_selected]
+                except IndexError:
+                    self.engine.message_log.add_message("Invalid entry.", color.invalid)
+                    return None
+                return self.use_item_selected(selected_item)
+
+            if key == tcod.event.K_d:
+                try:
+                    selected_item = self.unique_item[self.index_selected]
+                except IndexError:
+                    self.engine.message_log.add_message("Invalid entry.", color.invalid)
+                    return None
+                return self.drop_item_selected(selected_item)
+
+            if key == tcod.event.K_f:
+                self.typing = True
                 return None
-            return self.drop_item_selected(selected_item)
+
+        else:
+            if ord('z') >= key >= ord('a') or key == tcod.event.K_SPACE:
+                print(chr(key))
+                self.search_string += chr(key)
+                return None
+            elif key == tcod.event.K_BACKSPACE:
+                self.search_string = self.search_string[:-1]
+                return None
+            elif key == tcod.event.K_RETURN:
+                self.typing = False
+                return None
 
         return super().ev_keydown(event)
 
@@ -508,6 +536,15 @@ class InventoryEventHandler(AskUserEventHandler):
     def drop_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Drop this item."""
         return actions.DropItem(self.engine.player, item)
+
+    def strip_by_search_item(self):
+        list_to_remove = []
+        for i in self.unique_item:
+            if str.find(str.lower(i.name), str.lower(self.search_string)) == -1:
+                list_to_remove.append(i)
+        for i in list_to_remove:
+            self.unique_item.remove(i)
+
 
 
 class SelectIndexHandler(AskUserEventHandler):
