@@ -24,3 +24,5 @@ bar_empty = (0x40, 0x10, 0x10)
 
 menu_title = (255, 255, 63)
 menu_text = white
+
+shortcut_hint = (0x20, 0xF9, 0x12)

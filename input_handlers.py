@@ -409,10 +409,7 @@ class InventoryEventHandler(AskUserEventHandler):
         self.unique_item = self.engine.player.inventory.unique_item()
 
         number_of_unique_items_in_inventory = len(self.unique_item)
-        height = number_of_unique_items_in_inventory + 2
-
-        if height <= 3:
-            height = 3
+        height = number_of_unique_items_in_inventory + 5
 
         if self.engine.player.x <= 30:
             x = 40
@@ -426,6 +423,8 @@ class InventoryEventHandler(AskUserEventHandler):
         for i in self.unique_item:
             if len(i.name) > width:
                 width = len(i.name)
+
+        width = max(width, 12)
 
         console.draw_frame(
             x=x,
@@ -445,8 +444,6 @@ class InventoryEventHandler(AskUserEventHandler):
                 occurrence_number = self.engine.player.inventory.item_occurrence(item)
 
                 item_string = f"{item.name}"
-                # TODO change the color of the item if it's selected at the moment + show the number of the same
-                #  item in the inventory
                 if is_equipped:
                     item_string = f"{item_string} (E)"
                 if occurrence_number > 1:
@@ -461,6 +458,13 @@ class InventoryEventHandler(AskUserEventHandler):
                 console.print(x + 1, y + i + 1, item_string, fg=fg, bg=bg)
         else:
             console.print(x + 1, y + 1, "(Empty)")
+
+        console.print(x + 2, y + len(self.unique_item) + 2, "u", fg=color.shortcut_hint)
+        console.print(x + 3, y + len(self.unique_item) + 2, ": Use,")
+        console.print(x + 10, y + len(self.unique_item) + 2, "d", fg=color.shortcut_hint)
+        console.print(x + 11, y + len(self.unique_item) + 2, ": Drop")
+        console.print(x + 2, y + len(self.unique_item) + 3, "f", fg=color.shortcut_hint)
+        console.print(x + 3, y + len(self.unique_item) + 3, ": Search")
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         key = event.sym
