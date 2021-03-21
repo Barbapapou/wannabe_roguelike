@@ -15,6 +15,7 @@ from actions import (
 )
 import color
 import exceptions
+from gui_components.input import TextInputHandler
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -172,6 +173,8 @@ CURSOR_Y_KEYS = {
     tcod.event.K_DOWN: 1,
     tcod.event.K_PAGEUP: -10,
     tcod.event.K_PAGEDOWN: 10,
+    tcod.event.K_KP_8: -1,
+    tcod.event.K_KP_2: 1,
 }
 
 
@@ -382,7 +385,7 @@ class InventoryEventHandler(AskUserEventHandler):
         self.index_selected: int = 0
         self.unique_item: List[Item] = self.engine.player.inventory.unique_item()
         self.search_string: str = ""
-        self.typing = False
+        self.input_handler = None
 
     def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
         """Handle events for input handlers with an engine."""
@@ -396,7 +399,7 @@ class InventoryEventHandler(AskUserEventHandler):
                 return GameOverEventHandler(self.engine)
             elif self.engine.player.level.requires_level_up:
                 return LevelUpEventHandler(self.engine)
-            return self  # Return to the main handler.
+            return self
         return self
 
     TITLE = "INVENTORY"
@@ -464,11 +467,11 @@ class InventoryEventHandler(AskUserEventHandler):
         else:
             console.print(x + 1, y + 1, "(Empty)")
 
-        showed_string = f": {self.search_string}"
-        if self.typing:
-            showed_string = f"{showed_string}|"
+        if self.input_handler is None:
+            self.input_handler = TextInputHandler(console, (x+2, y + len(self.unique_item) + 2))
 
-        console.print(x + 2, y + len(self.unique_item) + 2, showed_string)
+        self.input_handler.pos = (x+2, y + len(self.unique_item) + 2)
+        self.input_handler.on_render()
 
         console.print(x + 2, y + len(self.unique_item) + 3, "u", fg=color.shortcut_hint)
         console.print(x + 3, y + len(self.unique_item) + 3, ": Use,")
@@ -480,8 +483,8 @@ class InventoryEventHandler(AskUserEventHandler):
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         key = event.sym
 
-        if not self.typing:
-            if key in MOVE_KEYS:
+        if not self.input_handler.typing:
+            if key in CURSOR_Y_KEYS:
                 dy = CURSOR_Y_KEYS[key]
                 self.index_selected += dy
                 if self.index_selected < 0:
@@ -507,20 +510,14 @@ class InventoryEventHandler(AskUserEventHandler):
                 return self.drop_item_selected(selected_item)
 
             if key == tcod.event.K_f:
-                self.typing = True
+                self.input_handler.typing = True
                 return None
 
         else:
-            if ord('z') >= key >= ord('a') or key == tcod.event.K_SPACE:
-                print(chr(key))
-                self.search_string += chr(key)
-                return None
-            elif key == tcod.event.K_BACKSPACE:
-                self.search_string = self.search_string[:-1]
-                return None
-            elif key == tcod.event.K_RETURN:
-                self.typing = False
-                return None
+            self.index_selected = 0
+            self.input_handler.ev_keydown(event)
+            self.search_string = self.input_handler.written_string
+            return None
 
         return super().ev_keydown(event)
 
@@ -544,7 +541,6 @@ class InventoryEventHandler(AskUserEventHandler):
                 list_to_remove.append(i)
         for i in list_to_remove:
             self.unique_item.remove(i)
-
 
 
 class SelectIndexHandler(AskUserEventHandler):

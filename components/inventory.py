@@ -28,12 +28,9 @@ class Inventory(BaseComponent):
         unique_item: List[Item] = []
         for i in self.items:
             is_counted = False
-            for j in unique_item:
-                if i.name == j.name:
-                    if self.parent.equipment.item_is_equipped(i):
-                        is_counted = False
-                        break
-                    else:
+            if not self.parent.equipment.item_is_equipped(i):
+                for j in unique_item:
+                    if i.name == j.name and not self.parent.equipment.item_is_equipped(j):
                         is_counted = True
                         break
             if not is_counted:
@@ -46,6 +43,6 @@ class Inventory(BaseComponent):
             return 1
         else:
             for i in self.items:
-                if item.name == i.name:
+                if item.name == i.name and not self.parent.equipment.item_is_equipped(i):
                     occ += 1
         return occ
