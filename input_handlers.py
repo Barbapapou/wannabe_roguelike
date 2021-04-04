@@ -152,6 +152,127 @@ class EventHandler(BaseEventHandler):
         self.engine.render(console)
 
 
+class Warhammer4CharacterSheet(EventHandler):
+
+    def on_render(self, console: tcod.Console) -> None:
+
+        console.draw_frame(
+            x=0,
+            y=0,
+            width=80,
+            height=50,
+            title="Warhammer 4 Character Sheet",
+            clear=True,
+            fg=(255, 255, 255),
+            bg=(0, 0, 0),
+        )
+
+        onglet_pad = 2
+        console.print(onglet_pad + 1, 1, "│Identity│")
+        console.print(onglet_pad + 11, 1, "Skills│")
+        console.print(onglet_pad + 18, 1, "Talents│")
+        console.print(onglet_pad + 26, 1, "Background│")
+        console.print(onglet_pad + 37, 1, "Inventory│")
+        console.print(onglet_pad + 47, 1, "Equipement│")
+        console.print(onglet_pad + 58, 1, "Psychology│")
+        console.print(onglet_pad + 69, 1, "Spells│")
+
+        console.print(2, 3, "Name: ")
+        console.print(2, 5, "Species: ")
+        console.print(2, 7, "Class: ")
+        console.print(2, 9, "Career Path: ")
+        console.print(2, 11, "Status: ")
+        console.print(2, 13, "Age: ")
+
+        console.print(25, 7, "Career: ")
+        console.print(25, 11, "Height: ")
+        console.print(25, 13, "Eyes: ")
+
+        console.print(48, 7, "Career Level: ")
+        console.print(48, 11, "Hair: ")
+
+        starting_point_characteristics = 20
+
+        console.print(starting_point_characteristics + 10, 16, "-CHARACTERISTICS-")
+
+        console.print(starting_point_characteristics - 1, 17, "┌" + "─" * 35 + "┐")
+
+        for i in range(8):
+            console.print(starting_point_characteristics+3+i*4, 17, "┬")
+
+
+        console.print(starting_point_characteristics - 1, 18, "│WS │")
+        console.print(starting_point_characteristics + 4, 18, "BS │")
+        console.print(starting_point_characteristics + 8, 18, "S  │")
+        console.print(starting_point_characteristics + 12, 18, "T  │")
+        console.print(starting_point_characteristics + 16, 18, "Ag │")
+        console.print(starting_point_characteristics + 20, 18, "Dex│")
+        console.print(starting_point_characteristics + 24, 18, "Int│")
+        console.print(starting_point_characteristics + 28, 18, "WP │")
+        console.print(starting_point_characteristics + 32, 18, "Fel│")
+
+        console.print(starting_point_characteristics - 1, 19, "├" + "─" * 35 + "┤")
+
+        console.print(10, 20, "Initial: │")
+
+        console.print(starting_point_characteristics - 1, 21, "├" + "─" * 35 + "┤")
+
+        console.print(10, 22, "Advances:│")
+
+        console.print(starting_point_characteristics - 1, 23, "├" + "─" * 35 + "┤")
+
+        console.print(10, 24, "Modif:   │")
+
+        console.print(starting_point_characteristics - 1, 25, "├" + "─" * 35 + "┤")
+
+        console.print(10, 26, "Total:   │")
+
+        console.print(starting_point_characteristics - 1, 27, "└" + "─" * 35 + "┘")
+
+        for i in range(8):
+            console.print(starting_point_characteristics+3+i*4, 27, "┴")
+
+        # Put the pipe to create the array
+        for i in range(9):
+            for j in range(4):
+                console.print(starting_point_characteristics+3+i*4,
+                              starting_point_characteristics+j*2,
+                              "│")
+
+        for i in range(8):
+            for j in range(4):
+                console.print(starting_point_characteristics + 3 + i * 4,
+                              starting_point_characteristics - 1 + j * 2,
+                              "┼")
+
+        console.print(2, 30, "Fate: ")
+        console.print(2, 32, "Resilience: ")
+        console.print(2, 34, "Motivation: ")
+
+        console.print(25, 30, "Fortune: ")
+        console.print(25, 32, "Resolve: ")
+
+        console.print(2, 36, "-EXPERIENCE- ")
+        console.print(2, 38, "Current: ")
+
+        console.print(25, 38, "Spent: ")
+
+        console.print(48, 38, "Total: ")
+
+        console.print(2, 40, "-MOVEMENT- ")
+        console.print(2, 42, "Movement: ")
+
+        console.print(25, 42, "Walk: ")
+
+        console.print(48, 42, "Run: ")
+
+        # Here command indication
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> None:
+        if event.sym == tcod.event.K_ESCAPE:
+            raise SystemExit()
+
+
 class GameOverEventHandler(EventHandler):
 
     def on_quit(self) -> None:

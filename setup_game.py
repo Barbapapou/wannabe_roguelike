@@ -82,7 +82,7 @@ class MainMenu(input_handlers.BaseEventHandler):
         console.print(
             console.width // 2,
             console.height // 2 - 4,
-            "TOMBS OF THE ANCIENT KINGS",
+            "WANNABE_ROGUELIKE",
             fg=color.menu_title,
             alignment=tcod.CENTER,
         )
@@ -94,9 +94,10 @@ class MainMenu(input_handlers.BaseEventHandler):
             alignment=tcod.CENTER,
         )
 
-        menu_width = 24
+        menu_width = 32
         for i, text in enumerate(
-            ["[N] Play a new game", "[C] Continue last game", "[Q] Quit"]
+            ["[N] Play a new game", "[C] Continue last game", "[W] Warhammer 4 Character Sheet"
+                , "[Q] Quit"]
         ):
             console.print(
                 console.width // 2,
@@ -124,5 +125,7 @@ class MainMenu(input_handlers.BaseEventHandler):
             pass
         elif event.sym == tcod.event.K_n:
             return input_handlers.MainGameEventHandler(new_game())
+        elif event.sym == tcod.event.K_w:
+            return input_handlers.Warhammer4CharacterSheet(new_game())
 
         return None
