@@ -15,6 +15,7 @@ from actions import (
 )
 import color
 import exceptions
+from gui_drawing import draw_array
 from gui_components.input import TextInputHandler
 
 if TYPE_CHECKING:
@@ -195,55 +196,25 @@ class Warhammer4CharacterSheet(EventHandler):
 
         console.print(starting_point_characteristics + 10, 16, "-CHARACTERISTICS-")
 
-        console.print(starting_point_characteristics - 1, 17, "┌" + "─" * 35 + "┐")
+        console.print(starting_point_characteristics, 18, "WS ")
+        console.print(starting_point_characteristics + 4, 18, "BS ")
+        console.print(starting_point_characteristics + 8, 18, "S  ")
+        console.print(starting_point_characteristics + 12, 18, "T  ")
+        console.print(starting_point_characteristics + 16, 18, "Ag ")
+        console.print(starting_point_characteristics + 20, 18, "Dex")
+        console.print(starting_point_characteristics + 24, 18, "Int")
+        console.print(starting_point_characteristics + 28, 18, "WP ")
+        console.print(starting_point_characteristics + 32, 18, "Fel")
 
-        for i in range(8):
-            console.print(starting_point_characteristics+3+i*4, 17, "┬")
+        console.print(10, 20, "Initial: ")
 
+        console.print(10, 22, "Advances:")
 
-        console.print(starting_point_characteristics - 1, 18, "│WS │")
-        console.print(starting_point_characteristics + 4, 18, "BS │")
-        console.print(starting_point_characteristics + 8, 18, "S  │")
-        console.print(starting_point_characteristics + 12, 18, "T  │")
-        console.print(starting_point_characteristics + 16, 18, "Ag │")
-        console.print(starting_point_characteristics + 20, 18, "Dex│")
-        console.print(starting_point_characteristics + 24, 18, "Int│")
-        console.print(starting_point_characteristics + 28, 18, "WP │")
-        console.print(starting_point_characteristics + 32, 18, "Fel│")
+        console.print(10, 24, "Modif:   ")
 
-        console.print(starting_point_characteristics - 1, 19, "├" + "─" * 35 + "┤")
+        console.print(10, 26, "Total:   ")
 
-        console.print(10, 20, "Initial: │")
-
-        console.print(starting_point_characteristics - 1, 21, "├" + "─" * 35 + "┤")
-
-        console.print(10, 22, "Advances:│")
-
-        console.print(starting_point_characteristics - 1, 23, "├" + "─" * 35 + "┤")
-
-        console.print(10, 24, "Modif:   │")
-
-        console.print(starting_point_characteristics - 1, 25, "├" + "─" * 35 + "┤")
-
-        console.print(10, 26, "Total:   │")
-
-        console.print(starting_point_characteristics - 1, 27, "└" + "─" * 35 + "┘")
-
-        for i in range(8):
-            console.print(starting_point_characteristics+3+i*4, 27, "┴")
-
-        # Put the pipe to create the array
-        for i in range(9):
-            for j in range(4):
-                console.print(starting_point_characteristics+3+i*4,
-                              starting_point_characteristics+j*2,
-                              "│")
-
-        for i in range(8):
-            for j in range(4):
-                console.print(starting_point_characteristics + 3 + i * 4,
-                              starting_point_characteristics - 1 + j * 2,
-                              "┼")
+        draw_array(console, 5, 9, 3, 1, starting_point_characteristics - 1, 17)
 
         console.print(2, 30, "Fate: ")
         console.print(2, 32, "Resilience: ")
