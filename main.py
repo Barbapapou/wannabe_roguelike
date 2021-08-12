@@ -29,7 +29,7 @@ def main() -> None:
             screen_width,
             screen_height,
             tileset=tileset,
-            title="Wannabe Roguelike",
+            title="Warhammer 40k Rogue Like",
             vsync=True,
     ) as context:
 
